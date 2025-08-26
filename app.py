@@ -1,45 +1,48 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
+from langchain_openai import ChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
 
-st.title("サンプルアプリ②: 少し複雑なWebアプリ")
+st.title("科目別講師アプリ")
 
-st.write("##### 動作モード1: 文字数カウント")
-st.write("入力フォームにテキストを入力し、「実行」ボタンを押すことで文字数をカウントできます。")
-st.write("##### 動作モード2: BMI値の計算")
-st.write("身長と体重を入力することで、肥満度を表す体型指数のBMI値を算出できます。")
+st.write("##### 文理別回答")
+st.write("受験勉強において、文系と理系の科目は異なるアプローチが必要です。このアプリでは、文系と理系の専門家がそれぞれの視点から質問に答えます。")
 
 selected_item = st.radio(
-    "動作モードを選択してください。",
-    ["文字数カウント", "BMI値の計算"]
+    "質問したい分野を選択してください。",
+    ["文系", "理系"]
 )
 
 st.divider()
 
-if selected_item == "文字数カウント":
-    input_message = st.text_input(label="文字数のカウント対象となるテキストを入力してください。")
-    text_count = len(input_message)
-
-else:
-    height = st.text_input(label="身長（cm）を入力してください。")
-    weight = st.text_input(label="体重（kg）を入力してください。")
+input_message = st.text_input(label="質問したい内容を入力してください。")
 
 if st.button("実行"):
-    st.divider()
-
-    if selected_item == "文字数カウント":
-        if input_message:
-            st.write(f"文字数: **{text_count}**")
-
-        else:
-            st.error("カウント対象となるテキストを入力してから「実行」ボタンを押してください。")
-
-    else:
-        if height and weight:
-            try:
-                bmi = round(int(weight) / ((int(height)/100) ** 2), 1)
-                st.write(f"BMI値: {bmi}")
-
-            except ValueError as e:
-                st.error("身長と体重は数値で入力してください。")
-
-        else:
-            st.error("身長と体重をどちらも入力してください。")
+    if input_message:  # 入力チェックを最初に行う
+        st.divider()
+        
+        # LLMの初期化を一度だけ行う
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+        
+        if selected_item == "文系":
+            st.write("### 文系の専門家からの回答")
+            messages = [
+                SystemMessage(content="You are an excellent humanities teacher, specializing in subjects such as English, Japanese, and history."),
+                HumanMessage(content=input_message),
+            ]
+            
+        elif selected_item == "理系":
+            st.write("### 理系の専門家からの回答")
+            messages = [
+                SystemMessage(content="You are an excellent science teacher, specializing in subjects such as mathematics, physics, chemistry, and biology."),
+                HumanMessage(content=input_message),
+            ]
+        
+        # 共通の処理でLLMを実行
+        result = llm(messages)
+        st.write(result.content)
+        
+    else: 
+        st.error("質問のテキストを入力してから「実行」ボタンを押してください。")
